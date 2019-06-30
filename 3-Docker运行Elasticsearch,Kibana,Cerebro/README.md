@@ -42,6 +42,11 @@ docker logs -t -f --tail 10 <容器名>
 docker cp <容器ID>:<要复制的容器中的文件路径> <宿主机目标路径>
 # 复制主机文件到容器
 docker cp <宿主机目标路径> <容器ID>:<要复制的容器中的文件路径>
+# docker volume
+# 查看、创建、删除 volume
+docker volumen ls
+docker volumen create <name>
+docker volumen rm <namme>
 ```
 
 ## 相关阅读
