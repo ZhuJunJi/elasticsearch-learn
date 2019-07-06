@@ -1,71 +1,97 @@
+# https://www.elastic.co/guide/en/elasticsearch/reference/7.2/docker.html#docker-prod-cluster-composefile
+# https://www.elastic.co/guide/en/kibana/7.2/docker.html
+# https://github.com/lmenezes/cerebro
+# Author                Date            Description
+# ZhuJunJi              2019/07/06      Elasticsearch、Kibana、Cerebro build
 version: '2.2'
 services:
-  kibana:
-    image: docker.elastic.co/kibana/kibana:7.2.0
-    container_name: kibana7
+  es01:
+    image: docker.io/elasticsearch:7.2.0
+    container_name: es01
     environment:
-      - I18N_LOCALE=zh-CN
-      - XPACK_GRAPH_ENABLED=true
-      - TIMELION_ENABLED=true
-      - XPACK_MONITORING_COLLECTION_ENABLED="true"
-    ports:
-      - "5601:5601"
-    networks:
-      - es7net
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.2.0
-    container_name: es7_01
-    environment:
-      - cluster.name=geektime
-      - node.name=es7_01
+      - node.name=es01
+      - discovery.seed_hosts=es02,es03
+      - cluster.initial_master_nodes=es01,es02,es03
+      - cluster.name=docker-cluster
       - bootstrap.memory_lock=true
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-      - discovery.seed_hosts=es7_01
-      - cluster.initial_master_nodes=es7_01,es7_02
+      - "ES_JAVA_OPTS=-Xms256m -Xmx256m"
     ulimits:
       memlock:
         soft: -1
         hard: -1
     volumes:
-      - es7data1:/usr/share/elasticsearch/data
+      - esdata01:/usr/share/elasticsearch/data
     ports:
       - 9200:9200
     networks:
-      - es7net
-  elasticsearch2:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.2.0
-    container_name: es7_02
+      - esnet
+  es02:
+    image: docker.io/elasticsearch:7.2.0
+    container_name: es02
     environment:
-      - cluster.name=geektime
-      - node.name=es7_02
+      - node.name=es02
+      - discovery.seed_hosts=es01,es03
+      - cluster.initial_master_nodes=es01,es02,es03
+      - cluster.name=docker-cluster
       - bootstrap.memory_lock=true
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-      - discovery.seed_hosts=es7_01
-      - cluster.initial_master_nodes=es7_01,es7_02
+      - "ES_JAVA_OPTS=-Xms256m -Xmx256m"
     ulimits:
       memlock:
         soft: -1
         hard: -1
     volumes:
-      - es7data2:/usr/share/elasticsearch/data
+      - esdata02:/usr/share/elasticsearch/data
+    ports:
+      - 9201:9200
     networks:
-      - es7net
+      - esnet
+  es03:
+    image: docker.io/elasticsearch:7.2.0
+    container_name: es03
+    environment:
+      - node.name=es03
+      - discovery.seed_hosts=es01,es02
+      - cluster.initial_master_nodes=es01,es02,es03
+      - cluster.name=docker-cluster
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms256m -Xmx256m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - esdata03:/usr/share/elasticsearch/data
+    ports:
+      - 9202:9200
+    networks:
+      - esnet
+  kibana:
+    image: docker.io/kibana:7.2.0
+    container_name: kibana
+    environment:
+      SERVER_NAME: kibana
+      ELASTICSEARCH_HOSTS: http://192.168.137.100:9200
+    ports:
+      - 5601:5601
+    networks:
+      - esnet
   cerebro:
     image: lmenezes/cerebro:0.8.3
     container_name: cerebro
     ports:
-      - "9000:9000"
+      - 9000:9000
     command:
-      - -Dhosts.0.host=http://elasticsearch:9200
+      - -Dhosts.0.host=http://192.168.137.100:9200
     networks:
-      - es7net
+      - esnet
 
 volumes:
-  es7data1:
+  esdata01:
     driver: local
-  es7data2:
+  esdata02:
+    driver: local
+  esdata03:
     driver: local
 
 networks:
-  es7net:
-    driver: bridge
+  esnet:
